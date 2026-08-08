@@ -10,8 +10,11 @@
   input { width: calc(100% - 90px); max-width: 200px; }
   #result { margin-top: 20px; border: 1px solid #ddd; padding: 20px; text-align: left; max-width: 800px; width: 100%; display: none; margin-left: auto; margin-right: auto; box-sizing: border-box; }
   .student-info { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-  .total-row { font-size: 1.1em; margin-bottom: 20px; padding: 10px; background-color: #f1f8ff; border-radius: 5px; display: inline-block; }
-  .total-label { font-weight: bold; margin-right: 15px; }
+  .total-row { font-size: 1.1em; margin-bottom: 20px; padding: 15px; background-color: #f1f8ff; border-radius: 5px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px; text-align: center; }
+  .total-item { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .total-label { font-weight: bold; margin-bottom: 5px; }
+  .score-text { font-weight: bold; color: #0056b3; font-size: 1.2em; }
+  .detail-link { font-size: 0.8em; margin-top: 8px; color: #555; cursor: pointer; text-decoration: underline; }
   .scores-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 10px; }
   .score-box { border: 1px solid #eee; padding: 10px 5px; text-align: center; background-color: #fafafa; border-radius: 4px; }
   .score-header { font-weight: bold; display: block; font-size: 0.9em; margin-bottom: 5px; word-break: keep-all; }
@@ -53,12 +56,18 @@ function searchScore() {
     .then(data => {
       if(data.success) {
         let html = `<div class="student-info">${data.data['이름']} (${data.data['학번']})</div>`;
-        html += `<div class="total-row"><span class="total-label">합계</span><span class="score-value" style="display:inline; font-weight:bold; color:#0056b3;">${data.data['합계']} 점</span></div>`;
-        html += `<div class="scores-grid">`;
         
-        for(let key in data.data) {
-          if(key !== '학번' && key !== '이름' && key !== '합계' && data.data[key] !== "") {
-            html += `
+        let score1 = data.data['수행평가(1)'] !== undefined && data.data['수행평가(1)'] !== "" ? data.data['수행평가(1)'] : 0;
+        let score2 = data.data['수행평가(2)'] !== undefined && data.data['수행평가(2)'] !== "" ? data.data['수행평가(2)'] : 0;
+        
+        let calculatedScore3 = 1;
+        let detailHtml = '';
+        
+        for(let i=1; i<=33; i++) {
+          let key = i + '차시';
+          if(data.data[key] !== undefined && data.data[key] !== "") {
+            calculatedScore3 += Number(data.data[key]);
+            detailHtml += `
               <div class="score-box">
                 <span class="score-header">${key}</span>
                 <span class="score-value">${data.data[key]}</span>
@@ -66,7 +75,31 @@ function searchScore() {
             `;
           }
         }
-        html += `</div>`;
+        
+        let displayScore3 = (data.data['수행평가(3)'] !== undefined && data.data['수행평가(3)'] !== "") ? data.data['수행평가(3)'] : calculatedScore3;
+
+        html += `
+          <div class="total-row">
+            <div class="total-item">
+              <span class="total-label">수행평가(1)</span>
+              <span class="score-text">${score1}점</span>
+            </div>
+            <div class="total-item">
+              <span class="total-label">수행평가(2)</span>
+              <span class="score-text">${score2}점</span>
+            </div>
+            <div class="total-item">
+              <span class="total-label">수행평가(3)</span>
+              <span class="score-text">${displayScore3}점</span>
+              <a class="detail-link" onclick="toggleDetails()">[차시별 점수 보기]</a>
+            </div>
+          </div>
+        `;
+        
+        if (detailHtml !== '') {
+          html += `<div id="detail-grid" class="scores-grid" style="display:none;">${detailHtml}</div>`;
+        }
+        
         resultDiv.innerHTML = html;
       } else {
         resultDiv.innerHTML = data.message;
@@ -75,6 +108,17 @@ function searchScore() {
     .catch(err => {
       resultDiv.innerHTML = '조회 중 오류가 발생했습니다.';
     });
+}
+
+function toggleDetails() {
+  const grid = document.getElementById('detail-grid');
+  if (grid) {
+    if (grid.style.display === 'none') {
+      grid.style.display = 'grid';
+    } else {
+      grid.style.display = 'none';
+    }
+  }
 }
 </script>
 </body>
